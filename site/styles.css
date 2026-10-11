@@ -189,3 +189,7 @@ h3 { font-size: 22px; color: var(--navy); }
   .mosaic { height: 300px; }
   .call-fab { display: grid; }
 }
+
+.hero-badge { display: inline-block; margin: 18px 0 0; padding: 8px 16px; border-radius: 999px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); backdrop-filter: blur(6px); font-size: 15px; }
+.hero-badge b { color: #f3d9a8; font-weight: 600; }
+.hero-badge + .hero-sub { margin-top: 14px; }
