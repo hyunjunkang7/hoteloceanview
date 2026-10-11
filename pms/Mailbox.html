@@ -1,83 +1,97 @@
 <style>
+  /* 📬 메일함 — 클래스는 모두 mbx- 로 시작 (PMS 기존 스타일과 충돌 방지) */
   #mbx-fab{position:fixed;right:18px;bottom:18px;z-index:9000;border:0;border-radius:999px;background:#1d4ed8;color:#fff;font:600 14px/1 inherit;padding:12px 18px;box-shadow:0 8px 20px -6px rgba(0,0,0,.35);cursor:pointer}
   #mbx-fab b{display:inline-block;min-width:20px;margin-left:6px;padding:2px 6px;border-radius:999px;background:#ef4444;font-size:12px}
-  #mbx-fab b:empty{display:none}
+  #mbx-fab b:empty,.mbx-navcount:empty{display:none}
   .mbx-navcount{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;line-height:18px}
-  .mbx-navcount:empty{display:none}
   #mbx-nav{cursor:pointer}
-  #mbx{position:fixed;inset:0;z-index:9001;background:rgba(15,23,42,.45);display:none}
+  #mbx{position:fixed;inset:0;z-index:9001;background:rgba(15,23,42,.45);display:none;font-size:13px;color:#1f2937}
   #mbx.on{display:flex;align-items:stretch;justify-content:center;padding:24px}
-  #mbx .box{background:#fff;border-radius:14px;width:min(1200px,100%);display:grid;grid-template-columns:380px 1fr;overflow:hidden;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
-  #mbx .side{border-right:1px solid #e5e7eb;display:flex;flex-direction:column;min-height:0}
-  #mbx .hd{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb}
-  #mbx .hd h3{margin:0;font-size:16px;flex:1}
-  #mbx .tabs{display:flex;gap:6px;padding:10px 14px;flex-wrap:wrap;border-bottom:1px solid #f1f5f9}
-  #mbx .chip{border:1px solid #e5e7eb;background:#fff;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer}
-  #mbx .chip.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
-  #mbx .list{overflow:auto;flex:1}
-  #mbx .item{padding:10px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer}
-  #mbx .item:hover{background:#f8fafc}
-  #mbx .item.sel{background:#eff6ff}
-  #mbx .item.unread .sub{font-weight:800}
-  #mbx .row1{display:flex;gap:6px;align-items:center;font-size:12px;color:#64748b}
-  #mbx .row1 .from{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#334155}
-  #mbx .sub{font-size:13px;margin:3px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #mbx .snip{font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #mbx .src{font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;color:#fff;white-space:nowrap}
-  #mbx .src.web{background:#c9a46a}#mbx .src.hanmail{background:#2563eb}#mbx .src.gmail{background:#dc2626}#mbx .src.front{background:#64748b}
-  #mbx .done-tag{font-size:10.5px;color:#16a34a;font-weight:700}
-  #mbx .main{display:flex;flex-direction:column;min-height:0}
-  #mbx .msgs{flex:1;overflow:auto;padding:14px 18px;background:#f8fafc}
-  #mbx .msg{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:10px}
-  #mbx .msg.mine{background:#eff6ff;border-color:#bfdbfe}
-  #mbx .msg .meta{font-size:12px;color:#64748b;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px}
-  #mbx .msg pre{white-space:pre-wrap;word-break:break-word;font:13px/1.6 inherit;margin:0}
-  #mbx .att{font-size:12px;color:#64748b;margin-top:6px}
-  #mbx .compose{border-top:1px solid #e5e7eb;padding:12px 18px;display:grid;gap:8px}
-  #mbx textarea{width:100%;min-height:110px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:13px/1.5 inherit;resize:vertical}
-  #mbx .actions{display:flex;gap:8px;align-items:center}
-  #mbx .btn{border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer;font-size:13px}
-  #mbx .btn.primary{background:#1d4ed8;color:#fff}
-  #mbx .btn.ok{background:#16a34a;color:#fff}
-  #mbx .btn.ghost{background:#f1f5f9;color:#334155}
-  #mbx .btn:disabled{opacity:.5;cursor:default}
-  #mbx .status{font-size:12px;color:#64748b;flex:1}
-  #mbx .status.err{color:#dc2626}
-  #mbx .empty{padding:40px 20px;text-align:center;color:#94a3b8;font-size:13px}
-  @media (max-width:820px){#mbx.on{padding:0}#mbx .box{grid-template-columns:1fr;border-radius:0}#mbx .main{display:none}#mbx.reading .side{display:none}#mbx.reading .main{display:flex}}
+  #mbx *{box-sizing:border-box}
+  .mbx-wrap{background:#fff;border-radius:14px;width:min(1240px,100%);display:grid;grid-template-columns:360px minmax(0,1fr);overflow:hidden;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+  .mbx-side{border-right:1px solid #e5e7eb;display:flex;flex-direction:column;min-height:0;min-width:0}
+  .mbx-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb;min-height:56px}
+  .mbx-head h3{margin:0;font-size:16px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mbx-bar{display:flex;gap:6px;padding:10px 14px;flex-wrap:wrap;border-bottom:1px solid #f1f5f9}
+  .mbx-chip{border:1px solid #e5e7eb;background:#fff;border-radius:999px;padding:4px 11px;font-size:12px;cursor:pointer;white-space:nowrap;color:#374151}
+  .mbx-chip.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+  .mbx-list{overflow:auto;flex:1}
+  .mbx-item{padding:10px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer}
+  .mbx-item:hover{background:#f8fafc}
+  .mbx-item.sel{background:#eff6ff}
+  .mbx-item.unread .mbx-sub{font-weight:800}
+  .mbx-row1{display:flex;gap:6px;align-items:center;font-size:12px;color:#64748b}
+  .mbx-from{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#334155}
+  .mbx-sub{font-size:13px;margin:3px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mbx-snip{font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mbx-src{font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;color:#fff;white-space:nowrap}
+  .mbx-src.web{background:#c9a46a}.mbx-src.hanmail{background:#2563eb}.mbx-src.gmail{background:#dc2626}.mbx-src.front{background:#64748b}
+  .mbx-tag{font-size:10.5px;font-weight:700;white-space:nowrap}
+  .mbx-tag.ok{color:#16a34a}.mbx-tag.hold{color:#b45309}
+  .mbx-main{display:flex;flex-direction:column;min-height:0;min-width:0}
+  .mbx-msgs{flex:1;overflow:auto;padding:14px 18px;background:#f8fafc}
+  .mbx-msg{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+  .mbx-msg.mine{background:#eff6ff;border-color:#bfdbfe}
+  .mbx-meta{font-size:12px;color:#64748b;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px}
+  .mbx-msg pre{white-space:pre-wrap;word-break:break-word;font:13px/1.6 inherit;margin:0}
+  .mbx-att{font-size:12px;color:#64748b;margin-top:6px}
+  .mbx-compose{border-top:1px solid #e5e7eb;padding:12px 18px;display:grid;gap:8px;position:relative}
+  .mbx-compose textarea{width:100%;min-height:110px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:13px/1.5 inherit;resize:vertical}
+  .mbx-compose.drag::after{content:'여기에 파일을 놓으세요 (컨펌서 · 인보이스 등)';position:absolute;inset:6px;border:2px dashed #1d4ed8;border-radius:10px;background:rgba(239,246,255,.92);display:flex;align-items:center;justify-content:center;font-weight:700;color:#1d4ed8;font-size:14px}
+  .mbx-files{display:flex;flex-wrap:wrap;gap:6px}
+  .mbx-file{display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:3px 6px 3px 10px;font-size:12px}
+  .mbx-file button{border:0;background:#cbd5e1;color:#fff;border-radius:50%;width:18px;height:18px;line-height:18px;padding:0;cursor:pointer;font-size:12px}
+  .mbx-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .mbx-btn{border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer;font-size:13px;white-space:nowrap}
+  .mbx-btn.primary{background:#1d4ed8;color:#fff}
+  .mbx-btn.ok{background:#16a34a;color:#fff}
+  .mbx-btn.hold{background:#fef3c7;color:#92400e}
+  .mbx-btn.ghost{background:#f1f5f9;color:#334155}
+  .mbx-btn:disabled{opacity:.5;cursor:default}
+  .mbx-status{font-size:12px;color:#64748b;flex:1;min-width:120px}
+  .mbx-status.err{color:#dc2626}
+  .mbx-sig{font-size:11px;color:#94a3b8}
+  .mbx-empty{padding:40px 20px;text-align:center;color:#94a3b8;font-size:13px}
+  @media (max-width:820px){#mbx.on{padding:0}.mbx-wrap{grid-template-columns:1fr;border-radius:0}.mbx-main{display:none}#mbx.reading .mbx-side{display:none}#mbx.reading .mbx-main{display:flex}}
 </style>
 
 <button id="mbx-fab" type="button">📬 메일함<b id="mbx-count"></b></button>
 <div id="mbx">
-  <div class="box">
-    <div class="side">
-      <div class="hd"><h3>📬 메일함</h3>
-        <button class="btn ghost" type="button" id="mbx-refresh">새로고침</button>
-        <button class="btn ghost" type="button" id="mbx-close">닫기</button>
+  <div class="mbx-wrap">
+    <div class="mbx-side">
+      <div class="mbx-head"><h3>📬 메일함</h3>
+        <button class="mbx-btn ghost" type="button" id="mbx-refresh">새로고침</button>
+        <button class="mbx-btn ghost" type="button" id="mbx-close">닫기</button>
       </div>
-      <div class="tabs" id="mbx-box">
-        <button class="chip on" data-box="inbox">받은 메일</button>
-        <button class="chip" data-box="done">처리완료</button>
+      <div class="mbx-bar" id="mbx-box">
+        <button class="mbx-chip on" data-box="inbox">받은 메일</button>
+        <button class="mbx-chip" data-box="hold">⏸ 보류</button>
+        <button class="mbx-chip" data-box="done">처리완료</button>
       </div>
-      <div class="tabs" id="mbx-src">
-        <button class="chip on" data-src="all">전체</button>
-        <button class="chip" data-src="web">홈페이지</button>
-        <button class="chip" data-src="hanmail">한메일</button>
-        <button class="chip" data-src="gmail">지메일</button>
-        <button class="chip" data-src="front">front@</button>
+      <div class="mbx-bar" id="mbx-src">
+        <button class="mbx-chip on" data-src="all">전체</button>
+        <button class="mbx-chip" data-src="web">홈페이지</button>
+        <button class="mbx-chip" data-src="hanmail">한메일</button>
+        <button class="mbx-chip" data-src="gmail">지메일</button>
+        <button class="mbx-chip" data-src="front">front@</button>
       </div>
-      <div class="list" id="mbx-list"><div class="empty">불러오는 중…</div></div>
+      <div class="mbx-list" id="mbx-list"><div class="mbx-empty">불러오는 중…</div></div>
     </div>
-    <div class="main">
-      <div class="hd"><button class="btn ghost" type="button" id="mbx-back" style="display:none">← 목록</button><h3 id="mbx-subject">메일을 선택하세요</h3></div>
-      <div class="msgs" id="mbx-msgs"></div>
-      <div class="compose" id="mbx-compose" style="display:none">
-        <textarea id="mbx-body" placeholder="답장 내용을 입력하세요. 손님이 메일을 보낸 주소(front@ 또는 지메일)에서 발송됩니다."></textarea>
-        <div class="actions">
-          <span class="status" id="mbx-status"></span>
-          <button class="btn ok" type="button" id="mbx-done">처리완료</button>
-          <button class="btn primary" type="button" id="mbx-send">답장 보내기</button>
+    <div class="mbx-main">
+      <div class="mbx-head"><button class="mbx-btn ghost" type="button" id="mbx-back" style="display:none">← 목록</button><h3 id="mbx-subject">메일을 선택하세요</h3></div>
+      <div class="mbx-msgs" id="mbx-msgs"></div>
+      <div class="mbx-compose" id="mbx-compose" style="display:none">
+        <textarea id="mbx-body" placeholder="답장 내용을 입력하세요. 파일(컨펌서·인보이스)은 이 칸에 끌어다 놓으면 첨부됩니다."></textarea>
+        <div class="mbx-files" id="mbx-files"></div>
+        <div class="mbx-actions">
+          <button class="mbx-btn ghost" type="button" id="mbx-attach">📎 파일 첨부</button>
+          <input type="file" id="mbx-file-input" multiple style="display:none">
+          <span class="mbx-status" id="mbx-status"></span>
+          <button class="mbx-btn hold" type="button" id="mbx-hold">⏸ 보류</button>
+          <button class="mbx-btn ok" type="button" id="mbx-done">처리완료</button>
+          <button class="mbx-btn primary" type="button" id="mbx-send">답장 보내기</button>
         </div>
+        <div class="mbx-sig">✉ 답장 아래에 호텔 로고와 연락처 서명이 자동으로 붙습니다.</div>
       </div>
     </div>
   </div>
@@ -85,7 +99,8 @@
 
 <script>
 (function () {
-  var state = { box: 'inbox', src: 'all', threads: [], cur: null };
+  var MAX_MB = 20;
+  var state = { box: 'inbox', src: 'all', threads: [], cur: null, files: [] };
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var when = function (iso) {
@@ -94,10 +109,14 @@
     return d.toDateString() === now.toDateString() ? p(d.getHours()) + ':' + p(d.getMinutes()) : (d.getMonth() + 1) + '/' + d.getDate();
   };
   var shortFrom = function (f) { var m = /^"?([^"<]+)"?\s*</.exec(f || ''); return m ? m[1].trim() : (f || ''); };
+  var mb = function (n) { return (n / 1048576).toFixed(1) + 'MB'; };
   var run = function (fn, args, ok, fail) {
     var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { (fail || setErr)(e && e.message || String(e)); });
     r[fn].apply(r, args);
   };
+  var setStatus = function (t) { $('mbx-status').className = 'mbx-status'; $('mbx-status').textContent = t || ''; };
+  var setErr = function (t) { $('mbx-status').className = 'mbx-status err'; $('mbx-status').textContent = t; };
+
   // 왼쪽 메뉴 '리포트' 아래에 '메일함' 추가 (못 찾으면 오른쪽 아래 버튼 사용)
   var countEls = [$('mbx-count')];
   var setCount = function (n) { countEls.forEach(function (el) { el.textContent = n || ''; }); };
@@ -110,27 +129,26 @@
     $('mbx-fab').style.display = 'none';
     countEls.push($('mbx-count2'));
   }
-  var setStatus = function (t) { $('mbx-status').className = 'status'; $('mbx-status').textContent = t || ''; };
-  var setErr = function (t) { $('mbx-status').className = 'status err'; $('mbx-status').textContent = t; };
 
   function load() {
-    $('mbx-list').innerHTML = '<div class="empty">불러오는 중…</div>';
+    $('mbx-list').innerHTML = '<div class="mbx-empty">불러오는 중…</div>';
     run('mailList', [state.box], function (list) {
       state.threads = list || [];
       if (state.box === 'inbox') setCount(state.threads.filter(function (t) { return t.unread; }).length);
       renderList();
-    }, function (e) { $('mbx-list').innerHTML = '<div class="empty">' + esc(e) + '</div>'; });
+    }, function (e) { $('mbx-list').innerHTML = '<div class="mbx-empty">' + esc(e) + '</div>'; });
   }
 
   function renderList() {
     var rows = state.threads.filter(function (t) { return state.src === 'all' || t.source.key === state.src; });
-    if (!rows.length) { $('mbx-list').innerHTML = '<div class="empty">메일이 없습니다</div>'; return; }
+    if (!rows.length) { $('mbx-list').innerHTML = '<div class="mbx-empty">메일이 없습니다</div>'; return; }
     $('mbx-list').innerHTML = rows.map(function (t) {
-      return '<div class="item' + (t.unread ? ' unread' : '') + (state.cur && state.cur.id === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '">' +
-        '<div class="row1"><span class="src ' + esc(t.source.key) + '">' + esc(t.source.label) + '</span><span class="from">' + esc(shortFrom(t.from)) + '</span>' +
-        (t.replied ? '<span class="done-tag">답장함</span>' : '') + '<span>' + when(t.date) + '</span></div>' +
-        '<div class="sub">' + esc(t.subject) + (t.count > 1 ? ' (' + t.count + ')' : '') + '</div>' +
-        '<div class="snip">' + esc(t.snippet) + '</div></div>';
+      return '<div class="mbx-item' + (t.unread ? ' unread' : '') + (state.cur && state.cur.id === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '">' +
+        '<div class="mbx-row1"><span class="mbx-src ' + esc(t.source.key) + '">' + esc(t.source.label) + '</span><span class="mbx-from">' + esc(shortFrom(t.from)) + '</span>' +
+        (t.hold && state.box === 'inbox' ? '<span class="mbx-tag hold">보류중 새 메일</span>' : '') +
+        (t.replied ? '<span class="mbx-tag ok">답장함</span>' : '') + '<span>' + when(t.date) + '</span></div>' +
+        '<div class="mbx-sub">' + esc(t.subject) + (t.count > 1 ? ' (' + t.count + ')' : '') + '</div>' +
+        '<div class="mbx-snip">' + esc(t.snippet) + '</div></div>';
     }).join('');
   }
 
@@ -145,41 +163,85 @@
   }
 
   function showThread(th) {
+    if (!state.cur || state.cur.id !== th.id) { state.files = []; renderFiles(); }
     state.cur = th;
     renderList();
-    $('mbx-subject').innerHTML = '<span class="src ' + esc(th.source.key) + '">' + esc(th.source.label) + '</span> ' + esc(th.subject);
+    $('mbx-subject').innerHTML = '<span class="mbx-src ' + esc(th.source.key) + '">' + esc(th.source.label) + '</span> ' + esc(th.subject);
     $('mbx-msgs').innerHTML = th.messages.map(function (m) {
-      return '<div class="msg' + (m.mine ? ' mine' : '') + '"><div class="meta"><span>' + esc(m.from) + '</span><span>' + new Date(m.date).toLocaleString('ko-KR') + '</span></div>' +
-        '<pre>' + esc(m.body) + '</pre>' + (m.attachments.length ? '<div class="att">📎 ' + esc(m.attachments.join(', ')) + '</div>' : '') + '</div>';
+      return '<div class="mbx-msg' + (m.mine ? ' mine' : '') + '"><div class="mbx-meta"><span>' + esc(m.from) + '</span><span>' + new Date(m.date).toLocaleString('ko-KR') + '</span></div>' +
+        '<pre>' + esc(m.body) + '</pre>' + (m.attachments.length ? '<div class="mbx-att">📎 ' + esc(m.attachments.join(', ')) + '</div>' : '') + '</div>';
     }).join('');
     $('mbx-msgs').scrollTop = $('mbx-msgs').scrollHeight;
     $('mbx-compose').style.display = '';
     $('mbx-done').textContent = th.done ? '받은 메일로 되돌리기' : '처리완료';
+    $('mbx-hold').textContent = th.hold ? '▶ 보류 해제' : '⏸ 보류';
     setStatus('');
   }
 
+  // ---------- 첨부 파일 ----------
+  function totalSize() { return state.files.reduce(function (s, f) { return s + f.size; }, 0); }
+  function renderFiles() {
+    $('mbx-files').innerHTML = state.files.map(function (f, i) {
+      return '<span class="mbx-file">📄 ' + esc(f.name) + ' <small>' + mb(f.size) + '</small><button type="button" data-i="' + i + '" title="빼기">×</button></span>';
+    }).join('');
+  }
+  function addFiles(list) {
+    [].forEach.call(list || [], function (file) {
+      if (totalSize() + file.size > MAX_MB * 1048576) { setErr('첨부는 합계 ' + MAX_MB + 'MB까지 가능합니다 (' + file.name + ' 제외)'); return; }
+      var entry = { name: file.name, mime: file.type || 'application/octet-stream', size: file.size, data: null };
+      state.files.push(entry);
+      var rd = new FileReader();
+      rd.onload = function () { entry.data = String(rd.result).split(',')[1]; };
+      rd.readAsDataURL(file);
+    });
+    renderFiles();
+  }
+  $('mbx-files').onclick = function (e) {
+    var b = e.target.closest('button[data-i]'); if (!b) return;
+    state.files.splice(+b.dataset.i, 1); renderFiles();
+  };
+  $('mbx-attach').onclick = function () { $('mbx-file-input').click(); };
+  $('mbx-file-input').onchange = function () { addFiles(this.files); this.value = ''; };
+  var cmp = $('mbx-compose'), dragDepth = 0;
+  cmp.addEventListener('dragenter', function (e) { e.preventDefault(); dragDepth++; cmp.classList.add('drag'); });
+  cmp.addEventListener('dragover', function (e) { e.preventDefault(); });
+  cmp.addEventListener('dragleave', function () { if (--dragDepth <= 0) { dragDepth = 0; cmp.classList.remove('drag'); } });
+  cmp.addEventListener('drop', function (e) { e.preventDefault(); dragDepth = 0; cmp.classList.remove('drag'); addFiles(e.dataTransfer.files); });
+
+  // ---------- 버튼 ----------
   $('mbx-send').onclick = function () {
     var body = $('mbx-body').value.trim();
-    if (!state.cur || !body) return;
-    if (!confirm('이 내용으로 답장을 보낼까요?')) return;
+    if (!state.cur || !body) { setErr('답장 내용을 입력하세요'); return; }
+    if (state.files.some(function (f) { return !f.data; })) { setErr('파일을 읽는 중입니다. 잠시 후 다시 눌러주세요.'); return; }
+    var n = state.files.length;
+    if (!confirm('이 내용으로 답장을 보낼까요?' + (n ? '\n첨부 파일 ' + n + '개' : ''))) return;
     $('mbx-send').disabled = true; setStatus('보내는 중…');
-    run('mailReply', [state.cur.id, body, ''], function (th) {
-      $('mbx-send').disabled = false; $('mbx-body').value = ''; showThread(th); setStatus('답장을 보냈습니다.'); load();
+    var files = state.files.map(function (f) { return { name: f.name, mime: f.mime, data: f.data }; });
+    run('mailReply', [state.cur.id, body, '', files], function (th) {
+      $('mbx-send').disabled = false; $('mbx-body').value = ''; state.files = []; renderFiles();
+      showThread(th); setStatus('답장을 보냈습니다.'); load();
     }, function (e) { $('mbx-send').disabled = false; setErr(e); });
   };
 
+  function closeCurrent() {
+    state.cur = null; state.files = []; renderFiles();
+    $('mbx-msgs').innerHTML = ''; $('mbx-compose').style.display = 'none'; $('mbx-subject').textContent = '메일을 선택하세요';
+    $('mbx').classList.remove('reading'); load();
+  }
   $('mbx-done').onclick = function () {
     if (!state.cur) return;
-    var undo = state.cur.done;
     $('mbx-done').disabled = true;
-    run('mailDone', [state.cur.id, undo], function () {
-      $('mbx-done').disabled = false; state.cur = null;
-      $('mbx-msgs').innerHTML = ''; $('mbx-compose').style.display = 'none'; $('mbx-subject').textContent = '메일을 선택하세요';
-      $('mbx').classList.remove('reading'); load();
-    }, function (e) { $('mbx-done').disabled = false; setErr(e); });
+    run('mailDone', [state.cur.id, state.cur.done], function () { $('mbx-done').disabled = false; closeCurrent(); },
+      function (e) { $('mbx-done').disabled = false; setErr(e); });
+  };
+  $('mbx-hold').onclick = function () {
+    if (!state.cur) return;
+    $('mbx-hold').disabled = true;
+    run('mailHold', [state.cur.id, state.cur.hold], function () { $('mbx-hold').disabled = false; closeCurrent(); },
+      function (e) { $('mbx-hold').disabled = false; setErr(e); });
   };
 
-  $('mbx-list').onclick = function (e) { var it = e.target.closest('.item'); if (it) open(it.dataset.id); };
+  $('mbx-list').onclick = function (e) { var it = e.target.closest('.mbx-item'); if (it) open(it.dataset.id); };
   $('mbx-box').onclick = function (e) {
     var b = e.target.closest('[data-box]'); if (!b) return;
     state.box = b.dataset.box; state.cur = null;

@@ -14,6 +14,7 @@
 const NOTIFY_TO = 'front@hoteloceanview.co.kr';
 const WEB_SUBJECT_PREFIX = '[홈페이지 예약문의]';
 const DONE_LABEL = '처리완료';
+const HOLD_LABEL = '보류';
 const SOURCES = [
   { key: 'hanmail', label: '한메일', match: 'hotelov@hanmail.net' },
   { key: 'gmail', label: '지메일', match: 'koreahotelov@gmail.com' },
@@ -85,10 +86,11 @@ function api_(p) {
   if (!token || p.token !== token) return json_({ ok: false, error: 'unauthorized' });
   try {
     switch (p.op) {
-      case 'list': return json_({ ok: true, threads: listThreads_(p.box === 'done') });
+      case 'list': return json_({ ok: true, threads: listThreads_(p.box) });
       case 'thread': return json_({ ok: true, thread: getThread_(p.id) });
-      case 'reply': return json_({ ok: true, thread: reply_(p.id, p.body, p.by) });
-      case 'done': return json_({ ok: true, done: setDone_(p.id, p.undo !== '1') });
+      case 'reply': return json_({ ok: true, thread: reply_(p.id, p.body, p.by, p.html, p.files) });
+      case 'done': return json_({ ok: true, done: setLabel_(p.id, DONE_LABEL, p.undo !== '1') });
+      case 'hold': return json_({ ok: true, hold: setLabel_(p.id, HOLD_LABEL, p.undo !== '1') });
       default: return json_({ ok: false, error: 'unknown op' });
     }
   } catch (err) {
@@ -96,8 +98,11 @@ function api_(p) {
   }
 }
 
-function listThreads_(done) {
-  const q = done ? `label:${DONE_LABEL} newer_than:60d` : `in:inbox -label:${DONE_LABEL} newer_than:60d`;
+function listThreads_(box) {
+  // 보류 중이라도 손님이 새로 메일하면(안 읽음) 받은 메일에 다시 보임
+  const q = box === 'done' ? `label:${DONE_LABEL} newer_than:60d`
+    : box === 'hold' ? `label:${HOLD_LABEL} -label:${DONE_LABEL} newer_than:90d`
+    : `in:inbox -label:${DONE_LABEL} {-label:${HOLD_LABEL} is:unread} newer_than:60d`;
   return GmailApp.search(q, 0, 60).map(t => {
     const msgs = t.getMessages();
     const first = msgs[0], last = msgs[msgs.length - 1];
@@ -111,6 +116,7 @@ function listThreads_(done) {
       unread: t.isUnread(),
       count: msgs.length,
       replied: isFromUs_(last),
+      hold: t.getLabels().some(l => l.getName() === HOLD_LABEL),
       source: sourceOf_(first),
     };
   });
@@ -126,6 +132,7 @@ function getThread_(id) {
     subject: t.getFirstMessageSubject(),
     source: sourceOf_(msgs[0]),
     done: t.getLabels().some(l => l.getName() === DONE_LABEL),
+    hold: t.getLabels().some(l => l.getName() === HOLD_LABEL),
     messages: msgs.map(m => ({
       from: m.getFrom(), to: m.getTo(), date: m.getDate().toISOString(),
       mine: isFromUs_(m), body: plain_(m).slice(0, 20000),
@@ -134,7 +141,7 @@ function getThread_(id) {
   };
 }
 
-function reply_(id, body, by) {
+function reply_(id, body, by, html, filesJson) {
   const t = GmailApp.getThreadById(id);
   if (!t) throw new Error('메일을 찾을 수 없습니다');
   const text = String(body || '').trim();
@@ -144,17 +151,27 @@ function reply_(id, body, by) {
   if (sourceOf_(msgs[0]).key === 'web' && !target.getReplyTo()) {
     throw new Error('손님이 이메일을 남기지 않은 문의입니다. 연락처로 전화/문자 해주세요.');
   }
-  target.reply(text, { name: '호텔 오션뷰 Hotel Ocean View' });
+  const files = filesJson ? JSON.parse(filesJson) : [];
+  const attachments = files.map(f => Utilities.newBlob(Utilities.base64Decode(f.data), f.mime || 'application/octet-stream', f.name || 'file'));
+  const opts = { name: '호텔 오션뷰 Hotel Ocean View', attachments };
+  if (html) opts.htmlBody = html;
+  target.reply(text, opts);
   if (by) Logger.log(`reply by ${by}: ${id}`);
   return getThread_(id);
 }
 
-function setDone_(id, done) {
+function setLabel_(id, name, on) {
   const t = GmailApp.getThreadById(id);
   if (!t) throw new Error('메일을 찾을 수 없습니다');
-  if (done) { t.addLabel(doneLabel_()); t.markRead(); t.moveToArchive(); }
-  else { t.removeLabel(doneLabel_()); t.moveToInbox(); }
-  return done;
+  const label = GmailApp.getUserLabelByName(name) || GmailApp.createLabel(name);
+  if (on) {
+    t.addLabel(label); t.markRead();
+    if (name === DONE_LABEL) { t.moveToArchive(); const h = GmailApp.getUserLabelByName(HOLD_LABEL); if (h) t.removeLabel(h); }
+  } else {
+    t.removeLabel(label);
+    if (name === DONE_LABEL) t.moveToInbox();
+  }
+  return on;
 }
 
 function sourceOf_(m) {
