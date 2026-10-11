@@ -1,0 +1,67 @@
+<style>
+  /* 객실현황 막대: 글씨 숨기고 색만 표시, 마우스를 올리면 말풍선으로 정보 표시 */
+  body.bars-clean .tl .pill, body.bars-clean .tl .pill * { font-size: 0 !important; }
+  body.bars-clean .tl .pill:hover { min-width: 0 !important; filter: brightness(.92); }
+  #bar-tip { position: fixed; z-index: 9500; display: none; max-width: 340px; padding: 9px 12px; border-radius: 8px;
+    background: #111827; color: #fff; font-size: 12px; line-height: 1.55; white-space: pre-line; pointer-events: none;
+    box-shadow: 0 10px 24px -8px rgba(0,0,0,.45); }
+  #bar-tip b { display: block; font-size: 13px; margin-bottom: 2px; }
+</style>
+<div id="bar-tip"></div>
+<script>
+(function () {
+  var KEY = 'pms_bars_clean';
+  var tip = document.getElementById('bar-tip');
+  var esc = function (s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); };
+  var clean = true;
+  try { clean = localStorage.getItem(KEY) !== '0'; } catch (e) {}
+  document.body.classList.toggle('bars-clean', clean);
+
+  // '명단 열 숨기기' 버튼 옆에 '막대 글씨 보기/숨기기' 버튼 (화면이 다시 그려져도 유지)
+  function ensureToggle() {
+    var info = document.querySelector('button[onclick^="tlToggleInfo"]');
+    if (!info || document.getElementById('bar-text-tgl')) return;
+    var b = document.createElement('button');
+    b.id = 'bar-text-tgl';
+    b.className = info.className;
+    b.type = 'button';
+    b.title = '예약 막대 안의 글씨 보이기/숨기기';
+    b.textContent = clean ? '막대 글씨 보기' : '막대 글씨 숨기기';
+    b.onclick = function () {
+      clean = !clean;
+      document.body.classList.toggle('bars-clean', clean);
+      try { localStorage.setItem(KEY, clean ? '1' : '0'); } catch (e) {}
+      b.textContent = clean ? '막대 글씨 보기' : '막대 글씨 숨기기';
+    };
+    info.parentNode.insertBefore(b, info.nextSibling);
+  }
+  ensureToggle();
+  new MutationObserver(ensureToggle).observe(document.body, { childList: true, subtree: true });
+
+  // 말풍선: 막대의 title(이름·에이전트·선박·기간 등)을 보기 좋게 표시
+  function show(el, x, y) {
+    if (el.title) { el.dataset.tip = el.title; el.removeAttribute('title'); }
+    var text = el.dataset.tip || el.textContent.trim();
+    if (!text) return;
+    var lines = text.split('\n');
+    tip.innerHTML = '<b>' + esc(lines[0]) + '</b>' + esc(lines.slice(1).join('\n'));
+    tip.style.display = 'block';
+    move(x, y);
+  }
+  function move(x, y) {
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    var left = Math.min(x + 14, window.innerWidth - w - 8);
+    var top = y + 18 + h > window.innerHeight ? y - h - 12 : y + 18;
+    tip.style.left = Math.max(8, left) + 'px';
+    tip.style.top = Math.max(8, top) + 'px';
+  }
+  function hide() { tip.style.display = 'none'; }
+  document.addEventListener('mouseover', function (e) {
+    var el = e.target.closest && e.target.closest('.tl .pill');
+    if (el) show(el, e.clientX, e.clientY); else hide();
+  });
+  document.addEventListener('mousemove', function (e) { if (tip.style.display === 'block') move(e.clientX, e.clientY); });
+  document.addEventListener('mousedown', hide);
+  document.addEventListener('scroll', hide, true);
+})();
+</script>
