@@ -14,9 +14,10 @@
     root.lang = l;
     document.querySelectorAll('option[data-ko]').forEach(o => { o.textContent = o.dataset[l]; });
     document.querySelectorAll('[data-ph-ko]').forEach(el => { el.placeholder = el.dataset[l === 'ko' ? 'phKo' : 'phEn']; });
+    document.querySelectorAll('[data-set-lang]').forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.setLang === l));
     try { localStorage.setItem('lang', l); } catch (e) {}
   }
-  document.getElementById('langToggle').addEventListener('click', () => setLang(root.dataset.lang === 'ko' ? 'en' : 'ko'));
+  document.querySelectorAll('[data-set-lang]').forEach(btn => btn.addEventListener('click', () => setLang(btn.dataset.setLang)));
 
   // ---- Nav: solid background after scrolling, mobile menu ----
   const nav = document.querySelector('.nav');
