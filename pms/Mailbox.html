@@ -47,6 +47,8 @@
   .mbx-btn.ok{background:#16a34a;color:#fff}
   .mbx-btn.hold{background:#fef3c7;color:#92400e}
   .mbx-btn.ghost{background:#f1f5f9;color:#334155}
+  .mbx-btn.del{background:#fff;color:#dc2626;border:1px solid #fecaca}
+  .mbx-btn.del:hover{background:#fef2f2}
   .mbx-btn:disabled{opacity:.5;cursor:default}
   .mbx-status{font-size:12px;color:#64748b;flex:1;min-width:120px}
   .mbx-status.err{color:#dc2626}
@@ -87,6 +89,7 @@
           <button class="mbx-btn ghost" type="button" id="mbx-attach">📎 파일 첨부</button>
           <input type="file" id="mbx-file-input" multiple style="display:none">
           <span class="mbx-status" id="mbx-status"></span>
+          <button class="mbx-btn del" type="button" id="mbx-trash" title="휴지통으로 이동 (30일 안에 Gmail 휴지통에서 복구 가능)">🗑 삭제</button>
           <button class="mbx-btn hold" type="button" id="mbx-hold">⏸ 보류</button>
           <button class="mbx-btn ok" type="button" id="mbx-done">처리완료</button>
           <button class="mbx-btn primary" type="button" id="mbx-send">답장 보내기</button>
@@ -239,6 +242,14 @@
     $('mbx-hold').disabled = true;
     run('mailHold', [state.cur.id, state.cur.hold], function () { $('mbx-hold').disabled = false; closeCurrent(); },
       function (e) { $('mbx-hold').disabled = false; setErr(e); });
+  };
+
+  $('mbx-trash').onclick = function () {
+    if (!state.cur) return;
+    if (!confirm('이 메일을 삭제할까요?\n(휴지통으로 이동 — 30일 안에는 Gmail 휴지통에서 되살릴 수 있어요)')) return;
+    $('mbx-trash').disabled = true;
+    run('mailTrash', [state.cur.id], function () { $('mbx-trash').disabled = false; closeCurrent(); },
+      function (e) { $('mbx-trash').disabled = false; setErr(e); });
   };
 
   $('mbx-list').onclick = function (e) { var it = e.target.closest('.mbx-item'); if (it) open(it.dataset.id); };

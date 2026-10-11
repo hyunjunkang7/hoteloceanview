@@ -67,6 +67,15 @@ function mailDone(id, undo) {
   return mbxIsLocal_(id) ? mbxLocalLabel_(id, MBX_DONE_LABEL, !undo) : mbxHub_('done', { id, undo: undo ? '1' : '' }).done;
 }
 
+/** 휴지통으로 이동 (Gmail 휴지통에서 30일 안에 복구 가능) */
+function mailTrash(id) {
+  if (!mbxIsLocal_(id)) return mbxHub_('trash', { id }).trashed;
+  const t = GmailApp.getThreadById(mbxLocalId_(id));
+  if (!t) throw new Error('메일을 찾을 수 없습니다');
+  t.moveToTrash();
+  return true;
+}
+
 function mailHold(id, undo) {
   return mbxIsLocal_(id) ? mbxLocalLabel_(id, MBX_HOLD_LABEL, !undo) : mbxHub_('hold', { id, undo: undo ? '1' : '' }).hold;
 }

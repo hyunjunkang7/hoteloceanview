@@ -91,6 +91,7 @@ function api_(p) {
       case 'reply': return json_({ ok: true, thread: reply_(p.id, p.body, p.by, p.html, p.files) });
       case 'done': return json_({ ok: true, done: setLabel_(p.id, DONE_LABEL, p.undo !== '1') });
       case 'hold': return json_({ ok: true, hold: setLabel_(p.id, HOLD_LABEL, p.undo !== '1') });
+      case 'trash': return json_({ ok: true, trashed: trash_(p.id) });
       default: return json_({ ok: false, error: 'unknown op' });
     }
   } catch (err) {
@@ -158,6 +159,14 @@ function reply_(id, body, by, html, filesJson) {
   target.reply(text, opts);
   if (by) Logger.log(`reply by ${by}: ${id}`);
   return getThread_(id);
+}
+
+// 휴지통으로 이동 (Gmail 휴지통에서 30일 안에 복구 가능)
+function trash_(id) {
+  const t = GmailApp.getThreadById(id);
+  if (!t) throw new Error('메일을 찾을 수 없습니다');
+  t.moveToTrash();
+  return true;
 }
 
 function setLabel_(id, name, on) {
