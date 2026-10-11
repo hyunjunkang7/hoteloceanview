@@ -1,4 +1,3 @@
-<!-- ================= 📬 메일함 (front@ 메일 허브) — Index.html 의 </body> 바로 앞에 붙여넣기 ================= -->
 <style>
   #mbx-fab{position:fixed;right:18px;bottom:18px;z-index:9000;border:0;border-radius:999px;background:#1d4ed8;color:#fff;font:600 14px/1 inherit;padding:12px 18px;box-shadow:0 8px 20px -6px rgba(0,0,0,.35);cursor:pointer}
   #mbx-fab b{display:inline-block;min-width:20px;margin-left:6px;padding:2px 6px;border-radius:999px;background:#ef4444;font-size:12px}
@@ -70,7 +69,7 @@
       <div class="hd"><button class="btn ghost" type="button" id="mbx-back" style="display:none">← 목록</button><h3 id="mbx-subject">메일을 선택하세요</h3></div>
       <div class="msgs" id="mbx-msgs"></div>
       <div class="compose" id="mbx-compose" style="display:none">
-        <textarea id="mbx-body" placeholder="답장 내용을 입력하세요. front@hoteloceanview.co.kr 로 발송됩니다."></textarea>
+        <textarea id="mbx-body" placeholder="답장 내용을 입력하세요. 손님이 메일을 보낸 주소(front@ 또는 지메일)에서 발송됩니다."></textarea>
         <div class="actions">
           <span class="status" id="mbx-status"></span>
           <button class="btn ok" type="button" id="mbx-done">처리완료</button>
@@ -189,4 +188,3 @@
   poll(); setInterval(poll, 180000);
 })();
 </script>
-<!-- ================= 📬 메일함 끝 ================= -->
