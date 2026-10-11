@@ -2,6 +2,9 @@
   #mbx-fab{position:fixed;right:18px;bottom:18px;z-index:9000;border:0;border-radius:999px;background:#1d4ed8;color:#fff;font:600 14px/1 inherit;padding:12px 18px;box-shadow:0 8px 20px -6px rgba(0,0,0,.35);cursor:pointer}
   #mbx-fab b{display:inline-block;min-width:20px;margin-left:6px;padding:2px 6px;border-radius:999px;background:#ef4444;font-size:12px}
   #mbx-fab b:empty{display:none}
+  .mbx-navcount{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;line-height:18px}
+  .mbx-navcount:empty{display:none}
+  #mbx-nav{cursor:pointer}
   #mbx{position:fixed;inset:0;z-index:9001;background:rgba(15,23,42,.45);display:none}
   #mbx.on{display:flex;align-items:stretch;justify-content:center;padding:24px}
   #mbx .box{background:#fff;border-radius:14px;width:min(1200px,100%);display:grid;grid-template-columns:380px 1fr;overflow:hidden;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
@@ -95,6 +98,18 @@
     var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { (fail || setErr)(e && e.message || String(e)); });
     r[fn].apply(r, args);
   };
+  // 왼쪽 메뉴 '리포트' 아래에 '메일함' 추가 (못 찾으면 오른쪽 아래 버튼 사용)
+  var countEls = [$('mbx-count')];
+  var setCount = function (n) { countEls.forEach(function (el) { el.textContent = n || ''; }); };
+  var reportLink = document.querySelector('a[onclick^="openReport"]');
+  if (reportLink) {
+    var nav = document.createElement('a');
+    nav.id = 'mbx-nav';
+    nav.innerHTML = '<span class="ic">📬</span> 메일함<b class="mbx-navcount" id="mbx-count2"></b>';
+    reportLink.parentNode.insertBefore(nav, reportLink.nextSibling);
+    $('mbx-fab').style.display = 'none';
+    countEls.push($('mbx-count2'));
+  }
   var setStatus = function (t) { $('mbx-status').className = 'status'; $('mbx-status').textContent = t || ''; };
   var setErr = function (t) { $('mbx-status').className = 'status err'; $('mbx-status').textContent = t; };
 
@@ -102,7 +117,7 @@
     $('mbx-list').innerHTML = '<div class="empty">불러오는 중…</div>';
     run('mailList', [state.box], function (list) {
       state.threads = list || [];
-      if (state.box === 'inbox') $('mbx-count').textContent = state.threads.filter(function (t) { return t.unread; }).length || '';
+      if (state.box === 'inbox') setCount(state.threads.filter(function (t) { return t.unread; }).length);
       renderList();
     }, function (e) { $('mbx-list').innerHTML = '<div class="empty">' + esc(e) + '</div>'; });
   }
@@ -126,7 +141,7 @@
     $('mbx-compose').style.display = 'none';
     run('mailThread', [id], showThread, function (e) { $('mbx-subject').textContent = e; });
     var t = state.threads.filter(function (x) { return x.id === id; })[0];
-    if (t && t.unread) { t.unread = false; $('mbx-count').textContent = state.threads.filter(function (x) { return x.unread; }).length || ''; }
+    if (t && t.unread) { t.unread = false; setCount(state.threads.filter(function (x) { return x.unread; }).length); }
   }
 
   function showThread(th) {
@@ -177,14 +192,16 @@
     [].forEach.call($('mbx-src').children, function (x) { x.classList.toggle('on', x === b); });
     renderList();
   };
-  $('mbx-fab').onclick = function () { $('mbx').classList.add('on'); load(); };
+  var openBox = function () { $('mbx').classList.add('on'); load(); };
+  $('mbx-fab').onclick = openBox;
+  if ($('mbx-nav')) $('mbx-nav').onclick = openBox;
   $('mbx-close').onclick = function () { $('mbx').classList.remove('on', 'reading'); };
   $('mbx-back').onclick = function () { $('mbx').classList.remove('reading'); };
   $('mbx-refresh').onclick = load;
   if (window.matchMedia('(max-width:820px)').matches) $('mbx-back').style.display = '';
 
   // 안 읽은 메일 수: 처음 + 3분마다
-  var poll = function () { run('mailList', ['inbox'], function (l) { $('mbx-count').textContent = (l || []).filter(function (t) { return t.unread; }).length || ''; }, function () {}); };
+  var poll = function () { run('mailList', ['inbox'], function (l) { setCount((l || []).filter(function (t) { return t.unread; }).length); }, function () {}); };
   poll(); setInterval(poll, 180000);
 })();
 </script>
