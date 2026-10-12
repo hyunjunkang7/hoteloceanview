@@ -35,15 +35,42 @@ const MBX_SIGNATURE_HTML =
 // ---------- 화면에서 호출 ----------
 
 function mailList(box) {
-  box = ['inbox', 'hold', 'done'].indexOf(box) >= 0 ? box : 'inbox';
+  box = mbxBox_(box);
   let hub = [], hubError = '';
-  try { hub = mbxHub_('list', { box }).threads.filter(t => t.source.key !== 'gmail'); }
-  catch (e) { hubError = String(e.message || e); }
-  const local = mbxLocalList_(box);
-  const all = hub.concat(local).sort((a, b) => (a.date < b.date ? 1 : -1));
+  try { hub = mailListHub(box); } catch (e) { hubError = String(e.message || e); }
+  const all = hub.concat(mailListLocal(box)).sort((a, b) => (a.date < b.date ? 1 : -1));
   if (hubError && all.length === 0) throw new Error(hubError);
   return all;
 }
+
+// 화면에서 두 쪽을 동시에 불러오도록 나눠 둔 함수 (더 빠름)
+function mailListLocal(box) { box = mbxBox_(box); return mbxCached_('local:' + box, () => mbxLocalList_(box)); }
+function mailListHub(box) { box = mbxBox_(box); return mbxCached_('hub:' + box, () => mbxHub_('list', { box }).threads.filter(t => t.source.key !== 'gmail')); }
+
+/** 안 읽은 메일 수 (가벼운 확인용) */
+function mailUnreadCount() {
+  return mbxCached_('count', () => {
+    let n = GmailApp.search('is:unread ' + mbxQuery_('inbox'), 0, 99).length;
+    try { n += mbxHub_('count', {}).count || 0; } catch (e) {}
+    return n;
+  });
+}
+
+// ---------- 캐시: 여러 PC가 동시에 열어도 90초에 한 번만 실제로 Gmail 을 읽음 (하루 호출 한도 보호) ----------
+const MBX_CACHE_SEC = 90;
+const MBX_CACHE_KEYS = ['local:inbox', 'local:hold', 'local:done', 'hub:inbox', 'hub:hold', 'hub:done', 'count'];
+function mbxCached_(key, fn) {
+  const cache = CacheService.getScriptCache();
+  const hit = cache.get('mbx:' + key);
+  if (hit) return JSON.parse(hit);
+  const val = fn();
+  const json = JSON.stringify(val);
+  if (json.length < 90000) cache.put('mbx:' + key, json, MBX_CACHE_SEC);
+  return val;
+}
+function mbxClearCache_() { CacheService.getScriptCache().removeAll(MBX_CACHE_KEYS.map(k => 'mbx:' + k)); }
+
+const mbxBox_ = box => (['inbox', 'hold', 'done'].indexOf(box) >= 0 ? box : 'inbox');
 
 function mailThread(id) {
   return mbxIsLocal_(id) ? mbxLocalThread_(id) : mbxHub_('thread', { id }).thread;
@@ -59,16 +86,19 @@ function mailReply(id, body, by, files) {
   const plain = text + '\n' + MBX_SIGNATURE_TEXT;
   const html = '<div style="font-family:Arial,\'Malgun Gothic\',sans-serif;font-size:14px;line-height:1.6;color:#111827">' +
     mbxEsc_(text).replace(/\n/g, '<br>') + '</div>' + MBX_SIGNATURE_HTML;
+  mbxClearCache_();
   if (mbxIsLocal_(id)) return mbxLocalReply_(id, plain, html, files);
   return mbxHub_('reply', { id, body: plain, html, by: by || '', files: JSON.stringify(files) }).thread;
 }
 
 function mailDone(id, undo) {
+  mbxClearCache_();
   return mbxIsLocal_(id) ? mbxLocalLabel_(id, MBX_DONE_LABEL, !undo) : mbxHub_('done', { id, undo: undo ? '1' : '' }).done;
 }
 
 /** 휴지통으로 이동 (Gmail 휴지통에서 30일 안에 복구 가능) */
 function mailTrash(id) {
+  mbxClearCache_();
   if (!mbxIsLocal_(id)) return mbxHub_('trash', { id }).trashed;
   const t = GmailApp.getThreadById(mbxLocalId_(id));
   if (!t) throw new Error('메일을 찾을 수 없습니다');
@@ -77,6 +107,7 @@ function mailTrash(id) {
 }
 
 function mailHold(id, undo) {
+  mbxClearCache_();
   return mbxIsLocal_(id) ? mbxLocalLabel_(id, MBX_HOLD_LABEL, !undo) : mbxHub_('hold', { id, undo: undo ? '1' : '' }).hold;
 }
 
@@ -113,8 +144,13 @@ function mbxQuery_(box) {
 }
 
 function mbxLocalList_(box) {
-  return GmailApp.search(mbxQuery_(box), 0, 60).map(t => {
-    const msgs = t.getMessages();
+  const threads = GmailApp.search(mbxQuery_(box), 0, 40);
+  if (!threads.length) return [];
+  const all = GmailApp.getMessagesForThreads(threads); // 한 번에 읽어서 빠르게
+  const holdIds = {};
+  if (box === 'inbox') GmailApp.search(`label:${MBX_HOLD_LABEL} is:unread`, 0, 50).forEach(t => { holdIds[t.getId()] = 1; });
+  return threads.map((t, i) => {
+    const msgs = all[i];
     const last = msgs[msgs.length - 1];
     const lastIn = msgs.filter(m => !mbxMine_(m)).pop() || msgs[0];
     return {
@@ -126,7 +162,7 @@ function mbxLocalList_(box) {
       unread: t.isUnread(),
       count: msgs.length,
       replied: mbxMine_(last),
-      hold: t.getLabels().some(l => l.getName() === MBX_HOLD_LABEL),
+      hold: box === 'hold' || !!holdIds[t.getId()],
       source: MBX_GMAIL_SOURCE,
     };
   });

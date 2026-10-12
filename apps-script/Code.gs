@@ -87,6 +87,7 @@ function api_(p) {
   try {
     switch (p.op) {
       case 'list': return json_({ ok: true, threads: listThreads_(p.box) });
+      case 'count': return json_({ ok: true, count: GmailApp.search('is:unread ' + inboxQuery_(), 0, 99).length });
       case 'thread': return json_({ ok: true, thread: getThread_(p.id) });
       case 'reply': return json_({ ok: true, thread: reply_(p.id, p.body, p.by, p.html, p.files) });
       case 'done': return json_({ ok: true, done: setLabel_(p.id, DONE_LABEL, p.undo !== '1') });
@@ -99,13 +100,22 @@ function api_(p) {
   }
 }
 
-function listThreads_(box) {
+function inboxQuery_() {
   // 보류 중이라도 손님이 새로 메일하면(안 읽음) 받은 메일에 다시 보임
+  return `in:inbox -label:${DONE_LABEL} {-label:${HOLD_LABEL} is:unread} newer_than:60d`;
+}
+
+function listThreads_(box) {
   const q = box === 'done' ? `label:${DONE_LABEL} newer_than:60d`
     : box === 'hold' ? `label:${HOLD_LABEL} -label:${DONE_LABEL} newer_than:90d`
-    : `in:inbox -label:${DONE_LABEL} {-label:${HOLD_LABEL} is:unread} newer_than:60d`;
-  return GmailApp.search(q, 0, 60).map(t => {
-    const msgs = t.getMessages();
+    : inboxQuery_();
+  const threads = GmailApp.search(q, 0, 40);
+  if (!threads.length) return [];
+  const all = GmailApp.getMessagesForThreads(threads); // 한 번에 읽어서 빠르게
+  const holdIds = {};
+  if (box !== 'hold' && box !== 'done') GmailApp.search(`label:${HOLD_LABEL} is:unread`, 0, 50).forEach(t => { holdIds[t.getId()] = 1; });
+  return threads.map((t, i) => {
+    const msgs = all[i];
     const first = msgs[0], last = msgs[msgs.length - 1];
     const lastIn = msgs.filter(m => !isFromUs_(m)).pop() || first;
     return {
@@ -117,7 +127,7 @@ function listThreads_(box) {
       unread: t.isUnread(),
       count: msgs.length,
       replied: isFromUs_(last),
-      hold: t.getLabels().some(l => l.getName() === HOLD_LABEL),
+      hold: box === 'hold' || !!holdIds[t.getId()],
       source: sourceOf_(first),
     };
   });

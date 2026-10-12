@@ -53,6 +53,8 @@
   .mbx-status{font-size:12px;color:#64748b;flex:1;min-width:120px}
   .mbx-status.err{color:#dc2626}
   .mbx-sig{font-size:11px;color:#94a3b8}
+  .mbx-note{padding:6px 14px;font-size:11px;color:#64748b;background:#f8fafc;border-bottom:1px solid #f1f5f9}
+  .mbx-note.err{color:#dc2626}
   .mbx-empty{padding:40px 20px;text-align:center;color:#94a3b8;font-size:13px}
   @media (max-width:820px){#mbx.on{padding:0}.mbx-wrap{grid-template-columns:1fr;border-radius:0}.mbx-main{display:none}#mbx.reading .mbx-side{display:none}#mbx.reading .mbx-main{display:flex}}
 </style>
@@ -133,19 +135,37 @@
     countEls.push($('mbx-count2'));
   }
 
-  function load() {
-    $('mbx-list').innerHTML = '<div class="mbx-empty">불러오는 중…</div>';
-    run('mailList', [state.box], function (list) {
-      state.threads = list || [];
-      if (state.box === 'inbox') setCount(state.threads.filter(function (t) { return t.unread; }).length);
+  // 지메일과 front@ 를 동시에 불러와서, 먼저 온 쪽부터 바로 보여줌
+  var loadSeq = 0;
+  function load(silent) {
+    var seq = ++loadSeq, box = state.box, parts = { local: null, hub: null }, errs = [];
+    if (!silent) { state.threads = []; $('mbx-list').innerHTML = '<div class="mbx-empty">불러오는 중…</div>'; }
+    var done = function () {
+      if (seq !== loadSeq) return; // 그 사이 다른 상자를 눌렀으면 무시
+      var pending = (parts.local === null) + (parts.hub === null);
+      state.threads = (parts.local || []).concat(parts.hub || []).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+      state.loading = pending > 0;
+      state.loadErr = errs.join(' / ');
+      if (box === 'inbox' && !pending) setCount(state.threads.filter(function (t) { return t.unread; }).length);
       renderList();
-    }, function (e) { $('mbx-list').innerHTML = '<div class="mbx-empty">' + esc(e) + '</div>'; });
+    };
+    run('mailListLocal', [box], function (l) { parts.local = l || []; done(); }, function (e) { parts.local = []; errs.push('지메일: ' + e); done(); });
+    run('mailListHub', [box], function (l) { parts.hub = l || []; done(); }, function (e) { parts.hub = []; errs.push('front@: ' + e); done(); });
   }
 
+  var SRC_LABEL = { all: '전체', web: '홈페이지', hanmail: '한메일', gmail: '지메일', front: 'front@' };
   function renderList() {
+    // 필터 버튼에 개수 표시 → 다른 필터에 메일이 숨어 있어도 바로 보임
+    [].forEach.call($('mbx-src').children, function (b) {
+      var k = b.dataset.src;
+      var n = state.threads.filter(function (t) { return k === 'all' || t.source.key === k; }).length;
+      b.textContent = SRC_LABEL[k] + (n ? ' ' + n : '');
+    });
     var rows = state.threads.filter(function (t) { return state.src === 'all' || t.source.key === state.src; });
-    if (!rows.length) { $('mbx-list').innerHTML = '<div class="mbx-empty">메일이 없습니다</div>'; return; }
-    $('mbx-list').innerHTML = rows.map(function (t) {
+    var note = (state.loading ? '<div class="mbx-note">나머지 메일 불러오는 중…</div>' : '') +
+      (state.loadErr ? '<div class="mbx-note err">' + esc(state.loadErr) + '</div>' : '');
+    if (!rows.length) { $('mbx-list').innerHTML = note + '<div class="mbx-empty">' + (state.loading ? '불러오는 중…' : '메일이 없습니다') + '</div>'; return; }
+    $('mbx-list').innerHTML = note + rows.map(function (t) {
       return '<div class="mbx-item' + (t.unread ? ' unread' : '') + (state.cur && state.cur.id === t.id ? ' sel' : '') + '" data-id="' + esc(t.id) + '">' +
         '<div class="mbx-row1"><span class="mbx-src ' + esc(t.source.key) + '">' + esc(t.source.label) + '</span><span class="mbx-from">' + esc(shortFrom(t.from)) + '</span>' +
         (t.hold && state.box === 'inbox' ? '<span class="mbx-tag hold">보류중 새 메일</span>' : '') +
@@ -265,7 +285,13 @@
     [].forEach.call($('mbx-src').children, function (x) { x.classList.toggle('on', x === b); });
     renderList();
   };
-  var openBox = function () { $('mbx').classList.add('on'); load(); };
+  // 열 때마다 '받은 메일 · 전체'로 시작
+  var openBox = function () {
+    state.box = 'inbox'; state.src = 'all';
+    [].forEach.call($('mbx-box').children, function (x) { x.classList.toggle('on', x.dataset.box === 'inbox'); });
+    [].forEach.call($('mbx-src').children, function (x) { x.classList.toggle('on', x.dataset.src === 'all'); });
+    $('mbx').classList.add('on'); load();
+  };
   $('mbx-fab').onclick = openBox;
   if ($('mbx-nav')) $('mbx-nav').onclick = openBox;
   $('mbx-close').onclick = function () { $('mbx').classList.remove('on', 'reading'); };
@@ -274,7 +300,12 @@
   if (window.matchMedia('(max-width:820px)').matches) $('mbx-back').style.display = '';
 
   // 안 읽은 메일 수: 처음 + 3분마다
-  var poll = function () { run('mailList', ['inbox'], function (l) { setCount((l || []).filter(function (t) { return t.unread; }).length); }, function () {}); };
-  poll(); setInterval(poll, 180000);
+  // 2분마다: 메일함이 열려 있으면 목록 새로고침, 닫혀 있으면 안 읽은 수만 가볍게 확인
+  // (서버가 90초 캐시를 공유하므로 PC가 여러 대여도 Gmail 호출은 늘지 않음)
+  setInterval(function () {
+    if ($('mbx').classList.contains('on')) load(true);
+    else run('mailUnreadCount', [], function (n) { setCount(n); }, function () {});
+  }, 120000);
+  run('mailUnreadCount', [], function (n) { setCount(n); }, function () {});
 })();
 </script>
