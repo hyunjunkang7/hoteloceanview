@@ -14,22 +14,22 @@ let MBX_ME_ = null; // 이 스크립트를 실행하는 계정 (메일함을 쓸
 const mbxMe_ = () => MBX_ME_ || (MBX_ME_ = Session.getEffectiveUser().getEmail().toLowerCase());
 
 const MBX_SIGNATURE_TEXT = [
-  '', '--', '호텔 오션뷰 Hotel Ocean View',
-  '울산광역시 동구 해수욕장1길 50 · 50 Haesuyokjang 1-gil, Dong-gu, Ulsan, Korea',
-  'T. +82-52-235-7777 · front@hoteloceanview.co.kr',
-  'www.hoteloceanview.co.kr',
+  '', '--', 'Hotel Ocean View · 호텔 오션뷰',
+  '50, Haesuyokjang 1-gil, Dong-gu, Ulsan, Korea · 울산광역시 동구 해수욕장1길 50',
+  'T. +82-52-235-7777 · front@hoteloceanview.co.kr · www.hoteloceanview.co.kr',
 ].join('\n');
 
 const MBX_SIGNATURE_HTML =
-  '<table cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;border-top:1px solid #e5e7eb;padding-top:14px;font-family:Arial,\'Malgun Gothic\',sans-serif">' +
-  '<tr><td style="padding:14px 16px 0 0;vertical-align:top">' +
-  '<a href="https://www.hoteloceanview.co.kr"><img src="https://www.hoteloceanview.co.kr/images/email-logo.png" width="176" height="48" alt="Hotel Ocean View" style="display:block;border:0;border-radius:6px"></a></td>' +
-  '<td style="padding-top:12px;vertical-align:top;font-size:12px;line-height:1.65;color:#4b5563">' +
-  '<div style="font-size:14px;font-weight:bold;color:#12263a">호텔 오션뷰 &nbsp;Hotel Ocean View</div>' +
-  '<div>울산광역시 동구 해수욕장1길 50 · 50 Haesuyokjang 1-gil, Dong-gu, Ulsan, Korea</div>' +
-  '<div>T. +82-52-235-7777 · <a href="mailto:front@hoteloceanview.co.kr" style="color:#3f7d97;text-decoration:none">front@hoteloceanview.co.kr</a></div>' +
-  '<div><a href="https://www.hoteloceanview.co.kr" style="color:#3f7d97;text-decoration:none">www.hoteloceanview.co.kr</a>' +
-  ' &nbsp;<span style="color:#b8925a">HD현대중공업 · 미포 · 해양 차량 10분</span></div>' +
+  '<table cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;font-family:Arial,Malgun Gothic,sans-serif;border-collapse:collapse">' +
+  '<tr><td colspan="2" style="border-top:2px solid #ceaf54;padding:0;height:14px;line-height:14px;font-size:0">&nbsp;</td></tr>' +
+  '<tr><td style="padding:0 14px 0 0;vertical-align:top">' +
+  '<a href="https://www.hoteloceanview.co.kr"><img src="https://www.hoteloceanview.co.kr/images/email-mark.png" width="64" height="64" alt="Hotel Ocean View" style="display:block;border:0"></a></td>' +
+  '<td style="vertical-align:top;font-size:12px;line-height:1.65;color:#4b5563">' +
+  '<div style="font-size:15px;font-weight:bold;color:#1f2937;letter-spacing:.3px">Hotel Ocean View <span style="color:#a88a3a;font-weight:normal">· 호텔 오션뷰</span></div>' +
+  '<div>50, Haesuyokjang 1-gil, Dong-gu, Ulsan, Korea · 울산광역시 동구 해수욕장1길 50</div>' +
+  '<div>T. +82-52-235-7777 · <a href="mailto:front@hoteloceanview.co.kr" style="color:#a88a3a;text-decoration:none">front@hoteloceanview.co.kr</a> · ' +
+  '<a href="https://www.hoteloceanview.co.kr" style="color:#a88a3a;text-decoration:none">www.hoteloceanview.co.kr</a></div>' +
+  '<div style="color:#9ca3af;font-size:11px">10 min to HD Hyundai Heavy Industries · Mipo · Offshore &nbsp;|&nbsp; HD현대중공업 · 미포 · 해양 차량 10분</div>' +
   '</td></tr></table>';
 
 // ---------- 화면에서 호출 ----------
