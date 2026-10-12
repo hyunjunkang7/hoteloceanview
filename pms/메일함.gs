@@ -156,7 +156,7 @@ function mbxLocalReply_(id, plain, html, files) {
   if (!t) throw new Error('메일을 찾을 수 없습니다');
   const msgs = t.getMessages();
   const target = msgs.filter(m => !mbxMine_(m)).pop() || msgs[msgs.length - 1];
-  target.reply(plain, { name: '호텔 오션뷰 Hotel Ocean View', htmlBody: html, attachments: mbxBlobs_(files) });
+  target.reply(plain, { name: '오션뷰호텔', htmlBody: html, attachments: mbxBlobs_(files) });
   return mbxLocalThread_(id);
 }
 

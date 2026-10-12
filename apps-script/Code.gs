@@ -61,7 +61,7 @@ function webForm_(p) {
 
   const subject = `${WEB_SUBJECT_PREFIX} ${row[6]} / ${row[1]} ~ ${row[2]} / ${row[3]}`;
   const body = HEADERS.slice(1, 11).map((h, i) => `${h}: ${row[i + 1] || '-'}`).join('\n');
-  const options = { name: '호텔 오션뷰 홈페이지' };
+  const options = { name: '오션뷰호텔 홈페이지' };
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(p.email || '')) options.replyTo = p.email;
   MailApp.sendEmail(NOTIFY_TO, subject, body, options);
   return json_({ ok: true });
@@ -154,7 +154,7 @@ function reply_(id, body, by, html, filesJson) {
   }
   const files = filesJson ? JSON.parse(filesJson) : [];
   const attachments = files.map(f => Utilities.newBlob(Utilities.base64Decode(f.data), f.mime || 'application/octet-stream', f.name || 'file'));
-  const opts = { name: '호텔 오션뷰 Hotel Ocean View', attachments };
+  const opts = { name: '오션뷰호텔', attachments };
   if (html) opts.htmlBody = html;
   target.reply(text, opts);
   if (by) Logger.log(`reply by ${by}: ${id}`);
