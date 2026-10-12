@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko" data-lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>주변 길안내 | Hotel Ocean View</title>
+<meta name="description" content="호텔 오션뷰에서 홈플러스 울산동구점, 대왕암공원 가는 길">
+<meta property="og:title" content="호텔 오션뷰 주변 길안내">
+<meta property="og:description" content="홈플러스 · 대왕암공원 가는 길">
+<meta property="og:image" content="https://www.hoteloceanview.co.kr/images/exterior.webp">
+<link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root {
+  --navy: #12263a; --sea: #3f7d97; --sand: #c9a46a; --sand-soft: #efe6d6;
+  --paper: #fbf8f3; --ink: #1d2329; --muted: #6b7178; --line: #e4ddd1;
+  --sans: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+html[data-lang="ko"] [lang="en"], html[data-lang="en"] [lang="ko"] { display: none !important; }
+a { color: inherit; }
+
+header { background: var(--navy); color: #fff; padding: 22px 16px 26px; text-align: center; }
+.brand { text-decoration: none; display: inline-block; }
+.brand small { display: block; font-size: 12px; letter-spacing: .3em; color: var(--sand); }
+.brand b { font-size: 22px; letter-spacing: .14em; font-weight: 600; }
+header h1 { font-size: 17px; font-weight: 500; margin: 12px 0 0; opacity: .9; }
+.lang { position: absolute; top: 14px; right: 14px; display: flex; gap: 4px; }
+.lang button { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+.lang button.on { background: var(--sand); border-color: var(--sand); }
+
+main { width: min(720px, 100% - 32px); margin: 0 auto; padding: 20px 0 40px; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; position: sticky; top: 0; z-index: 500; background: var(--paper); padding: 8px 0; }
+.tabs a { text-align: center; padding: 12px 8px; border-radius: 12px; background: #fff; border: 1px solid var(--line); text-decoration: none; font-weight: 600; color: var(--navy); }
+
+.card { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin-bottom: 22px; scroll-margin-top: 70px; }
+.card-head { padding: 18px 18px 12px; }
+.card-head h2 { margin: 0; font-size: 21px; color: var(--navy); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.meta span { background: var(--sand-soft); color: #7a5d2e; border-radius: 999px; padding: 3px 11px; font-size: 13px; font-weight: 600; }
+.map { height: 340px; background: #e8eef1; }
+.steps { margin: 0; padding: 14px 18px 4px 40px; font-size: 15px; }
+.steps li { margin-bottom: 6px; }
+.info { padding: 0 18px; font-size: 14px; color: var(--muted); }
+.btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 14px 18px 18px; }
+.btns a { display: flex; align-items: center; justify-content: center; text-align: center; min-height: 46px; padding: 8px 6px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 14px; line-height: 1.25; }
+.kakao { background: #fee500; color: #191919; }
+.naver { background: #03c75a; color: #fff; }
+.google { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.hint { text-align: center; font-size: 13px; color: var(--muted); margin: -8px 0 22px; }
+
+footer { text-align: center; font-size: 14px; color: var(--muted); padding: 0 16px 36px; }
+footer a { color: var(--sea); font-weight: 600; text-decoration: none; }
+
+.pin { width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); display: grid; place-items: center; }
+.pin i { transform: rotate(45deg); font-style: normal; color: #fff; font-size: 12px; font-weight: 700; }
+.pin.hotel { background: var(--navy); }
+.pin.dest { background: #d9534f; }
+.leaflet-tooltip.lbl { font-family: var(--sans); font-weight: 700; font-size: 12px; padding: 2px 7px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="lang"><button data-l="ko" class="on">KO</button><button data-l="en">EN</button></div>
+  <a class="brand" href="/"><small>HOTEL</small><b>OCEAN VIEW</b></a>
+  <h1><span lang="ko">호텔 주변 길안내</span><span lang="en">Nearby Directions</span></h1>
+</header>
+
+<main>
+  <nav class="tabs">
+    <a href="#homeplus"><span lang="ko">🛒 홈플러스</span><span lang="en">🛒 Homeplus</span></a>
+    <a href="#daewangam"><span lang="ko">🌊 대왕암공원</span><span lang="en">🌊 Daewangam Park</span></a>
+  </nav>
+
+  <section class="card" id="homeplus">
+    <div class="card-head">
+      <h2><span lang="ko">홈플러스 울산동구점</span><span lang="en">Homeplus (Ulsan Dong-gu)</span></h2>
+      <div class="meta">
+        <span lang="ko">도보 약 10분</span><span lang="en">~10 min walk</span>
+        <span>700 m</span>
+      </div>
+    </div>
+    <div class="map" id="map-homeplus"></div>
+    <ol class="steps">
+      <li><span lang="ko">호텔에서 나와 북쪽으로 해수욕장1길을 따라 직진</span><span lang="en">Exit the hotel and head north along Haesuyokjang 1-gil</span></li>
+      <li><span lang="ko">큰길(방어진순환도로)이 나오면 길 건너편에 홈플러스</span><span lang="en">At the main road (Bangeojinsunhwan-doro), Homeplus is across the street</span></li>
+    </ol>
+    <p class="info"><span lang="ko">울산 동구 방어진순환도로 637</span><span lang="en">637 Bangeojinsunhwan-doro, Dong-gu, Ulsan</span></p>
+    <div class="btns">
+      <a class="kakao" href="https://map.kakao.com/link/by/walk/%ED%98%B8%ED%85%94%EC%98%A4%EC%85%98%EB%B7%B0,35.4933818,129.4275241/%ED%99%88%ED%94%8C%EB%9F%AC%EC%8A%A4%20%EC%9A%B8%EC%82%B0%EB%8F%99%EA%B5%AC%EC%A0%90,35.4989446,129.4274259"><span lang="ko">카카오맵<br>길찾기</span><span lang="en">Kakao<br>Map</span></a>
+      <a class="naver" href="https://map.naver.com/p/search/%ED%99%88%ED%94%8C%EB%9F%AC%EC%8A%A4%20%EC%9A%B8%EC%82%B0%EB%8F%99%EA%B5%AC%EC%A0%90"><span lang="ko">네이버<br>지도</span><span lang="en">Naver<br>Map</span></a>
+      <a class="google" href="https://www.google.com/maps/dir/?api=1&amp;origin=35.4933818,129.4275241&amp;destination=35.4989446,129.4274259&amp;travelmode=walking">Google<br>Maps</a>
+    </div>
+  </section>
+
+  <section class="card" id="daewangam">
+    <div class="card-head">
+      <h2><span lang="ko">대왕암공원</span><span lang="en">Daewangam Park</span></h2>
+      <div class="meta">
+        <span lang="ko">도보 약 20분</span><span lang="en">~20 min walk</span>
+        <span>1.4 km</span>
+      </div>
+    </div>
+    <div class="map" id="map-daewangam"></div>
+    <ol class="steps">
+      <li><span lang="ko">호텔에서 나와 남쪽 큰길(동대로)로 이동</span><span lang="en">Exit the hotel and walk south to the main road (Dongdae-ro)</span></li>
+      <li><span lang="ko">큰길을 따라 동쪽으로, 대왕암공원 표지판 방향으로 직진하면 공원 입구</span><span lang="en">Head east following the Daewangam Park signs to the park entrance</span></li>
+      <li><span lang="ko">공원 안 송림길을 지나 출렁다리 · 대왕암까지</span><span lang="en">Continue through the pine forest to the suspension bridge and Daewangam rock</span></li>
+    </ol>
+    <p class="info"><span lang="ko">돌아오는 길엔 일산해수욕장 해변길로 걸어도 좋아요.</span><span lang="en">On the way back, try the Ilsan Beach promenade.</span></p>
+    <div class="btns">
+      <a class="kakao" href="https://map.kakao.com/link/by/walk/%ED%98%B8%ED%85%94%EC%98%A4%EC%85%98%EB%B7%B0,35.4933818,129.4275241/%EB%8C%80%EC%99%95%EC%95%94%EA%B3%B5%EC%9B%90,35.4923597,129.4401777"><span lang="ko">카카오맵<br>길찾기</span><span lang="en">Kakao<br>Map</span></a>
+      <a class="naver" href="https://map.naver.com/p/search/%EB%8C%80%EC%99%95%EC%95%94%EA%B3%B5%EC%9B%90"><span lang="ko">네이버<br>지도</span><span lang="en">Naver<br>Map</span></a>
+      <a class="google" href="https://www.google.com/maps/dir/?api=1&amp;origin=35.4933818,129.4275241&amp;destination=35.4923597,129.4401777&amp;travelmode=walking">Google<br>Maps</a>
+    </div>
+  </section>
+
+  <p class="hint"><span lang="ko">버튼을 누르면 지도 앱에서 자세한 길안내를 볼 수 있어요.</span><span lang="en">Tap a button to open turn-by-turn directions in your map app.</span></p>
+</main>
+
+<footer>
+  <span lang="ko">문의 · 프론트</span><span lang="en">Front desk</span> <a href="tel:052-235-7777">052-235-7777</a>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+var HOTEL = [35.4933818, 129.4275241];
+var ROUTES = {
+  homeplus: { dest: [35.4989446, 129.4274259], ko: '홈플러스', en: 'Homeplus',
+    line: [[35.493356,129.427716],[35.494125,129.427872],[35.495352,129.428203],[35.496692,129.428585],[35.49673,129.428379],[35.497975,129.428697],[35.498118,129.427974],[35.49845,129.42805],[35.49849,129.42806],[35.498595,129.427348]] },
+  daewangam: { dest: [35.4923597, 129.4401777], ko: '대왕암공원', en: 'Daewangam Park',
+    line: [[35.493356,129.427716],[35.493159,129.427676],[35.492797,129.428222],[35.491949,129.429501],[35.491502,129.43023],[35.491114,129.430889],[35.491157,129.430969],[35.490926,129.431338],[35.490814,129.431525],[35.490722,129.431761],[35.490592,129.432135],[35.490515,129.432413],[35.490465,129.432657],[35.490146,129.432855],[35.490109,129.432943],[35.490032,129.432923],[35.489968,129.432942],[35.489813,129.432937],[35.489705,129.432973],[35.489645,129.433],[35.489581,129.433053],[35.48954,129.433117],[35.489505,129.433206],[35.489575,129.43377],[35.489669,129.434373],[35.489827,129.43478],[35.490341,129.435666],[35.490903,129.436589],[35.491252,129.43709],[35.491448,129.437417],[35.491616,129.437788],[35.491832,129.438332],[35.492076,129.439003],[35.492416,129.440034],[35.492441,129.440152]] }
+};
+
+function pin(cls, ch) {
+  return L.divIcon({ className: '', html: '<div class="pin ' + cls + '"><i>' + ch + '</i></div>', iconSize: [30, 30], iconAnchor: [15, 30] });
+}
+
+var labels = [];
+Object.keys(ROUTES).forEach(function (key) {
+  var r = ROUTES[key];
+  var map = L.map('map-' + key, { scrollWheelZoom: false, tap: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+  var line = [HOTEL].concat(r.line, [r.dest]);
+  L.polyline(line, { color: '#fff', weight: 9, opacity: .9 }).addTo(map);
+  L.polyline(line, { color: '#3f7d97', weight: 5, dashArray: '2 9', lineCap: 'round' }).addTo(map);
+  var h = L.marker(HOTEL, { icon: pin('hotel', 'H') }).addTo(map);
+  var d = L.marker(r.dest, { icon: pin('dest', '★') }).addTo(map);
+  labels.push({ m: h, ko: '호텔 오션뷰', en: 'Hotel Ocean View' }, { m: d, ko: r.ko, en: r.en });
+  map.fitBounds(L.latLngBounds(line), { padding: [40, 40] });
+});
+
+function setLang(l) {
+  document.documentElement.dataset.lang = l;
+  document.documentElement.lang = l;
+  document.querySelectorAll('.lang button').forEach(function (b) { b.classList.toggle('on', b.dataset.l === l); });
+  labels.forEach(function (x) {
+    x.m.unbindTooltip().bindTooltip(x[l], { permanent: true, direction: 'top', offset: [0, -30], className: 'lbl' });
+  });
+  try { localStorage.setItem('ov-lang', l); } catch (e) {}
+}
+document.querySelectorAll('.lang button').forEach(function (b) { b.onclick = function () { setLang(b.dataset.l); }; });
+var saved = null;
+try { saved = localStorage.getItem('ov-lang'); } catch (e) {}
+setLang(saved || (/^ko/i.test(navigator.language) ? 'ko' : 'en'));
+</script>
+</body>
+</html>
